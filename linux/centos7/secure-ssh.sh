@@ -12,10 +12,19 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-USERNSME=$1
+USERNAME=$1
 
-echo "Creating new user: $USERNAME"
-useradd -m -s /bin/bash "$USERNAME"
+if ! getent passwd "$USERNAME" > /dev/null 2>&1; then
+    echo "User '$USERNAME' does not exist. Proceeding with user creation..."
+    useradd -m -d /home/$USERNAME -s /bin/bash $USERNAME
+    mkdir /home/$USERNAME/.ssh
+    cp SYS265/linux/public-keys/id_rsa.pub /home/$USERNAME/.ssh/authorized_keys
+    chmod 700 /home/$USERNAME/.ssh
+    chmod 600 /home/$USERNAME/.ssh/authorized_keys
+    chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
+    echo "User '$USERNAME' has been created with passwordless SSH access."
+fi
+
 
 passwd -l "$USERNAME"
 
@@ -27,10 +36,7 @@ sed -i '/^PermitRootLogin /c\PermitRootLogin no' /etc/ssh/sshd_config
 sed -i '/^PasswordAuthentication /c\PasswordAuthentication no' /etc/ssh/sshd_config
 sed -i '/^PubkeyAuthentication /c\PubkeyAuthentication yes' /etc/ssh/sshd_config
 
-#Creates the user's .ssh directory for ssh keys
-mkdir -p /home/"$USERNAME"/.ssh
-chown "$USERNAME":"$USERNAME" /home/"$USERNAME"/.ssh
-chmod 700 /home/"$USERNAME"/.ssh
+
 
 scp web01:/home/web01/.ssh/id_rsa.pub /home/"$USERNAME"/.ssh/authorized_keys
 
