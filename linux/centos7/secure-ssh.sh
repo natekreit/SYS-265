@@ -14,7 +14,7 @@ fi
 
 USERNAME=$1
 
-if ! getent passwd "$USERNAME" > /dev/null 2>&1; then
+if ! getent "$USERNAME" > /dev/null 2>&1; then
     echo "User '$USERNAME' does not exist. Proceeding with user creation..."
     useradd -m -d /home/$USERNAME -s /bin/bash $USERNAME
     mkdir /home/$USERNAME/.ssh
