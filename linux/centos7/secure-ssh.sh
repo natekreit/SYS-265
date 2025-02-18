@@ -6,45 +6,20 @@
 #removes roots ability to ssh in
 
 #new user
-if [ -z "$1" ]; then
-  echo "Error: No username provided."
-  echo "Usage: $0 <username>"
-  exit 1
+sudo useradd -m -d /home/${1} -s /bin/bash ${1}
+sudo mkdir /home/${1}/.ssh
+cd /root
+sudo cp SYS-265/linux/public-keys/id_rsa.pub /home/${1}/.ssh/authorized_keys
+sudo chmod 700 /home/${1}/.ssh
+sudo chmod 600 /home/${1}/.ssh/authorized_keys
+sudo chown -R ${1}:${1} /home/${1}/.ssh
+
+if grep -q "PermitRootLogin" /etc/ssh/sshd_config; then
+   sudo sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+else
+   echo "PermitRootLogin not found in /etc/ssh/sshd_config"
 fi
-
-USERNAME=$1
-
-if ! getent passwd "$USERNAME" > /dev/null 2>&1; then
-    echo "User '$USERNAME' does not exist. Proceeding with user creation..."
-    useradd -m -d /home/$USERNAME -s /bin/bash $USERNAME
-    mkdir /home/$USERNAME/.ssh
-    cp SYS-265/linux/public-keys/id_rsa.pub /home/$USERNAME/.ssh/authorized_keys
-    chmod 700 /home/$USERNAME/.ssh
-    chmod 600 /home/$USERNAME/.ssh/authorized_keys
-    chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
-    echo "User '$USERNAME' has been created with passwordless SSH access."
-    exit 1
-fi
-
-
-passwd -l "$USERNAME"
-
-
-#no root ssh
-sed -i '/^PermitRootLogin /c\PermitRootLogin no' /etc/ssh/sshd_config
-
-#adds pub key
-sed -i '/^PasswordAuthentication /c\PasswordAuthentication no' /etc/ssh/sshd_config
-sed -i '/^PubkeyAuthentication /c\PubkeyAuthentication yes' /etc/ssh/sshd_config
-
-
-
-scp web01:/home/web01/.ssh/id_rsa.pub /home/"$USERNAME"/.ssh/authorized_keys
 
 
 #Reload SSH service
-systemctl reload sshd
-
-#message that says script complete
-echo "SSH security config complete."
-echo "User '$USERNAME' has been created and configured for SSH access."
+sudo systemctl restart sshd.service
