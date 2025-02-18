@@ -14,7 +14,7 @@ fi
 
 USERNAME=$1
 
-if ! getent "$USERNAME" > /dev/null 2>&1; then
+if ! getent passwd "$USERNAME" > /dev/null 2>&1; then
     echo "User '$USERNAME' does not exist. Proceeding with user creation..."
     useradd -m -d /home/$USERNAME -s /bin/bash $USERNAME
     mkdir /home/$USERNAME/.ssh
@@ -23,6 +23,7 @@ if ! getent "$USERNAME" > /dev/null 2>&1; then
     chmod 600 /home/$USERNAME/.ssh/authorized_keys
     chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
     echo "User '$USERNAME' has been created with passwordless SSH access."
+    exit 1
 fi
 
 
